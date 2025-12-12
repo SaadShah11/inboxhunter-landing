@@ -15,12 +15,10 @@ import {
   Play,
   CheckCircle2,
   ExternalLink,
-  Github,
   MessageCircle,
   FileText,
   Sparkles,
   Target,
-  Clock,
   BarChart3,
   Eye,
   Database,
@@ -30,6 +28,21 @@ import {
   X
 } from 'lucide-react'
 import './App.css'
+
+// =============================================================================
+// CONFIGURATION - These values come from environment variables
+// =============================================================================
+// Set these in your .env file for local development
+// Set these in AWS Amplify Environment Variables for production
+
+// S3 Bucket URL for downloads
+// Format: https://BUCKET_NAME.s3.REGION.amazonaws.com/releases/latest
+const DOWNLOAD_BASE_URL = import.meta.env.VITE_DOWNLOAD_BASE_URL || "https://inboxhunter-releases.s3.us-east-1.amazonaws.com/releases/latest"
+
+// Current version - this should match the version in Cargo.toml
+const CURRENT_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0"
+
+// =============================================================================
 
 // Animation variants
 const fadeInUp = {
@@ -440,28 +453,31 @@ function DownloadSection() {
     {
       name: 'macOS',
       icon: Apple,
-      version: 'v1.0.0',
-      size: '85 MB',
-      file: 'InboxHunter-1.0.0-macos.dmg',
+      version: `v${CURRENT_VERSION}`,
+      size: '~85 MB',
+      fileName: `InboxHunter_${CURRENT_VERSION}_aarch64.dmg`,  // Apple Silicon
+      altFileName: `InboxHunter_${CURRENT_VERSION}_x64.dmg`,   // Intel (optional)
       available: true
     },
     {
       name: 'Windows',
       icon: Monitor,
-      version: 'v1.0.0',
-      size: '92 MB',
-      file: 'InboxHunter-1.0.0-windows.exe',
+      version: `v${CURRENT_VERSION}`,
+      size: '~92 MB',
+      fileName: `InboxHunter_${CURRENT_VERSION}_x64-setup.exe`,
       available: true
     },
     {
       name: 'Linux',
       icon: Terminal,
-      version: 'v1.0.0',
-      size: '78 MB',
-      file: 'InboxHunter-1.0.0-linux.AppImage',
+      version: `v${CURRENT_VERSION}`,
+      size: '~78 MB',
+      fileName: `InboxHunter_${CURRENT_VERSION}_amd64.AppImage`,
       available: true
     },
   ]
+  
+  const getDownloadUrl = (fileName: string) => `${DOWNLOAD_BASE_URL}/${fileName}`
 
   return (
     <section id="download" className="py-32 relative overflow-hidden">
@@ -507,27 +523,64 @@ function DownloadSection() {
                   <div className="text-sm text-[hsl(var(--muted-foreground))] mb-6">
                     {platform.version} • {platform.size}
                   </div>
-                  <button
-                    className={`w-full py-3 px-6 rounded-xl font-medium transition-all ${
-                      platform.available
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:opacity-90'
-                        : 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] cursor-not-allowed'
-                    }`}
-                    disabled={!platform.available}
-                  >
-                    {platform.available ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Download className="w-4 h-4" />
-                        Download
-                      </span>
-                    ) : (
-                      'Coming Soon'
-                    )}
-        </button>
+                  {platform.available ? (
+                    <a
+                      href={getDownloadUrl(platform.fileName)}
+                      download
+                      className="w-full py-3 px-6 rounded-xl font-medium transition-all bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:opacity-90 flex items-center justify-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download
+                    </a>
+                  ) : (
+                    <button
+                      className="w-full py-3 px-6 rounded-xl font-medium bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] cursor-not-allowed"
+                      disabled
+                    >
+                      Coming Soon
+                    </button>
+                  )}
                 </div>
               </motion.div>
             )
           })}
+        </motion.div>
+
+        {/* Important Note */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="mt-12 max-w-2xl mx-auto p-6 rounded-2xl border border-amber-500/30 bg-amber-500/10"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+              <Zap className="w-5 h-5 text-amber-400" />
+            </div>
+            <div className="text-left">
+              <h4 className="font-semibold text-amber-400 mb-2">Important: Post-Installation Step</h4>
+              <p className="text-sm text-[hsl(var(--muted-foreground))] mb-3">
+                After installing, you'll need to enable the app since it's not from an official app store:
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-400 font-medium shrink-0">macOS:</span>
+                  <code className="text-emerald-400 bg-[hsl(var(--card))] px-2 py-1 rounded">xattr -cr /Applications/InboxHunter.app</code>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-400 font-medium shrink-0">Windows:</span>
+                  <span className="text-[hsl(var(--muted-foreground))]">Click "More info" → "Run anyway" on SmartScreen</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-400 font-medium shrink-0">Linux:</span>
+                  <code className="text-emerald-400 bg-[hsl(var(--card))] px-2 py-1 rounded">chmod +x InboxHunter.AppImage</code>
+                </div>
+              </div>
+              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-3">
+                See the <a href="#getting-started" className="text-blue-400 hover:underline">Getting Started</a> section for detailed instructions.
+              </p>
+            </div>
+          </div>
         </motion.div>
 
         {/* System Requirements */}
@@ -535,14 +588,9 @@ function DownloadSection() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="mt-12 text-center text-sm text-[hsl(var(--muted-foreground))]"
+          className="mt-8 text-center text-sm text-[hsl(var(--muted-foreground))]"
         >
           <p>Requires: Python 3.9+, Node.js 18+, 4GB RAM minimum</p>
-          <p className="mt-2">
-            <a href="#" className="text-blue-400 hover:underline inline-flex items-center gap-1">
-              View on GitHub <ExternalLink className="w-3 h-3" />
-            </a>
-          </p>
         </motion.div>
       </div>
     </section>
@@ -558,10 +606,15 @@ function GettingStartedSection() {
       content: [
         { type: 'text', value: '1. Download the app for your operating system from the download section above.' },
         { type: 'text', value: '2. Install the application:' },
-        { type: 'code', label: 'macOS', value: 'Open the .dmg file and drag InboxHunter to Applications' },
-        { type: 'code', label: 'Windows', value: 'Run the .exe installer and follow the prompts' },
-        { type: 'code', label: 'Linux', value: 'chmod +x InboxHunter.AppImage && ./InboxHunter.AppImage' },
-        { type: 'text', value: '3. On first launch, the app will set up its Python environment automatically.' },
+        { type: 'heading', value: '🍎 macOS' },
+        { type: 'text', value: 'Open the .dmg file and drag InboxHunter to Applications. Then run this command in Terminal to enable the app:' },
+        { type: 'code', label: 'Required: Remove quarantine', value: 'xattr -cr /Applications/InboxHunter.app' },
+        { type: 'text', value: 'This is required because the app is not notarized with Apple. It\'s completely safe - this just removes the download quarantine flag.' },
+        { type: 'heading', value: '🪟 Windows' },
+        { type: 'text', value: 'Run the .exe installer and follow the prompts. If Windows SmartScreen appears, click "More info" → "Run anyway".' },
+        { type: 'heading', value: '🐧 Linux' },
+        { type: 'code', label: 'Make executable and run', value: 'chmod +x InboxHunter.AppImage && ./InboxHunter.AppImage' },
+        { type: 'text', value: 'For .deb packages: sudo dpkg -i InboxHunter.deb' },
       ]
     },
     {
@@ -728,6 +781,10 @@ function FAQSection() {
       answer: 'Yes, InboxHunter is completely free and open source. However, you will need an OpenAI API key which has its own costs based on usage. The GPT-4o model typically costs about $0.01-0.05 per form filled.'
     },
     {
+      question: 'macOS says the app is "damaged" or Windows shows a warning?',
+      answer: 'This is normal for apps not from official app stores. On macOS, open Terminal and run: xattr -cr /Applications/InboxHunter.app — this removes the quarantine flag. On Windows, click "More info" then "Run anyway" on the SmartScreen popup. The app is completely safe.'
+    },
+    {
       question: 'What is the success rate for form filling?',
       answer: 'InboxHunter achieves a 90-100% success rate on standard opt-in forms. The AI can handle most form layouts including multi-step forms, hidden checkboxes, and complex validation. Some highly custom or JavaScript-heavy forms may require retries.'
     },
@@ -750,10 +807,6 @@ function FAQSection() {
     {
       question: 'Is my data stored securely?',
       answer: 'All data is stored locally in a SQLite database on your computer. We never collect or transmit your credentials, API keys, or scraped data. Your privacy is fully protected.'
-    },
-    {
-      question: 'How can I contribute to the project?',
-      answer: 'InboxHunter is open source! Check out our GitHub repository to report bugs, suggest features, or submit pull requests. We welcome contributions from the community.'
     },
   ]
 
@@ -822,16 +875,16 @@ function FAQSection() {
 function SupportSection() {
   const supportOptions = [
     {
-      icon: Github,
-      title: 'GitHub Issues',
-      description: 'Report bugs or request features',
-      link: '#',
-      linkText: 'Open Issue'
+      icon: Mail,
+      title: 'Email Support',
+      description: 'Get help from our team',
+      link: 'mailto:support@inboxhunter.com',
+      linkText: 'Contact Us'
     },
     {
       icon: MessageCircle,
       title: 'Discord Community',
-      description: 'Get help from the community',
+      description: 'Join the community',
       link: '#',
       linkText: 'Join Discord'
     },
@@ -839,7 +892,7 @@ function SupportSection() {
       icon: FileText,
       title: 'Documentation',
       description: 'Read the full documentation',
-      link: '#',
+      link: '#getting-started',
       linkText: 'View Docs'
     },
   ]
@@ -914,11 +967,11 @@ function Footer() {
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#download" className="hover:text-white transition-colors">Download</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
-            <a href="#" className="hover:text-white transition-colors">GitHub</a>
+            <a href="#support" className="hover:text-white transition-colors">Support</a>
           </div>
 
           <div className="text-sm text-[hsl(var(--muted-foreground))]">
-            © 2024 InboxHunter. MIT License.
+            © 2024 InboxHunter. All Rights Reserved.
           </div>
         </div>
       </div>
