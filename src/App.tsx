@@ -45,36 +45,19 @@ type Page = 'home' | 'getting-started' | 'how-it-works' | 'faq'
 // =============================================================================
 // OS Detection
 // =============================================================================
-type DetectedOS = 'mac-arm' | 'mac-intel' | 'windows' | 'linux' | 'unknown'
+type DetectedOS = 'mac-arm' | 'windows' | 'unknown'
 
 function detectOS(): DetectedOS {
   const userAgent = navigator.userAgent.toLowerCase()
   const platform = navigator.platform.toLowerCase()
   
+  // macOS - only Apple Silicon supported for now
   if (platform.includes('mac') || userAgent.includes('mac')) {
-    if (userAgent.includes('arm') || userAgent.includes('aarch64')) {
-      return 'mac-arm'
-    }
-    const canvas = document.createElement('canvas')
-    const gl = canvas.getContext('webgl')
-    if (gl) {
-      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
-      if (debugInfo) {
-        const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
-        if (renderer.includes('Apple M') || renderer.includes('Apple GPU')) {
-          return 'mac-arm'
-        }
-      }
-    }
-    return 'mac-intel'
+    return 'mac-arm'
   }
   
   if (platform.includes('win') || userAgent.includes('windows')) {
     return 'windows'
-  }
-  
-  if (platform.includes('linux') || userAgent.includes('linux')) {
-    return 'linux'
   }
   
   return 'unknown'
@@ -216,7 +199,7 @@ function Navbar({
                   >
                     {link.label}
                 </button>
-              ))}
+                ))}
             </motion.div>
           )}
         </AnimatePresence>
@@ -342,17 +325,18 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
         description: 'Open Terminal and run this command to enable the app:'
       }
     },
-    {
-      id: 'mac-intel',
-      name: 'macOS',
-      subtitle: 'Intel Processor',
-      icon: Apple,
-      fileName: `InboxHunter_${CURRENT_VERSION}_x64.dmg`,
-      postInstall: {
-        command: 'xattr -cr /Applications/InboxHunter.app',
-        description: 'Open Terminal and run this command to enable the app:'
-      }
-    },
+    // Intel Mac commented out for now
+    // {
+    //   id: 'mac-intel',
+    //   name: 'macOS',
+    //   subtitle: 'Intel Processor',
+    //   icon: Apple,
+    //   fileName: `InboxHunter_${CURRENT_VERSION}_x64.dmg`,
+    //   postInstall: {
+    //     command: 'xattr -cr /Applications/InboxHunter.app',
+    //     description: 'Open Terminal and run this command to enable the app:'
+    //   }
+    // },
     {
       id: 'windows',
       name: 'Windows',
@@ -364,28 +348,29 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
         description: 'If Windows SmartScreen appears, click "More info" then "Run anyway" to continue installation.'
       }
     },
-    {
-      id: 'linux',
-      name: 'Linux',
-      subtitle: 'AppImage (Universal)',
-      icon: Terminal,
-      fileName: `inbox-hunter_${CURRENT_VERSION}_amd64.AppImage`,
-      postInstall: {
-        command: 'chmod +x inbox-hunter_*.AppImage && ./inbox-hunter_*.AppImage',
-        description: 'Make the file executable and run it:'
-      }
-    },
-    {
-      id: 'linux-deb',
-      name: 'Linux',
-      subtitle: 'Debian/Ubuntu (.deb)',
-      icon: Terminal,
-      fileName: `inbox-hunter_${CURRENT_VERSION}_amd64.deb`,
-      postInstall: {
-        command: 'sudo dpkg -i inbox-hunter_*.deb',
-        description: 'Install using your package manager:'
-      }
-    },
+    // Linux builds are currently disabled
+    // {
+    //   id: 'linux',
+    //   name: 'Linux',
+    //   subtitle: 'AppImage (Universal)',
+    //   icon: Terminal,
+    //   fileName: `inbox-hunter_${CURRENT_VERSION}_amd64.AppImage`,
+    //   postInstall: {
+    //     command: 'chmod +x inbox-hunter_*.AppImage && ./inbox-hunter_*.AppImage',
+    //     description: 'Make the file executable and run it:'
+    //   }
+    // },
+    // {
+    //   id: 'linux-deb',
+    //   name: 'Linux',
+    //   subtitle: 'Debian/Ubuntu (.deb)',
+    //   icon: Terminal,
+    //   fileName: `inbox-hunter_${CURRENT_VERSION}_amd64.deb`,
+    //   postInstall: {
+    //     command: 'sudo dpkg -i inbox-hunter_*.deb',
+    //     description: 'Install using your package manager:'
+    //   }
+    // },
   ]
 
   const getDownloadUrl = (fileName: string) => `${DOWNLOAD_BASE_URL}/${fileName}`
@@ -395,9 +380,7 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
 
   const osDisplayName = {
     'mac-arm': 'macOS (Apple Silicon)',
-    'mac-intel': 'macOS (Intel)',
     'windows': 'Windows',
-    'linux': 'Linux',
     'unknown': 'your system'
   }
 
@@ -454,7 +437,7 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
         </motion.div>
               </div>
       </section>
-
+              
       {/* Download Section */}
       <section id="download" className={`py-20 px-6 ${isDark ? 'bg-gradient-to-b from-blue-500/5 via-transparent to-transparent' : 'bg-gradient-to-b from-blue-50 via-transparent to-transparent'}`}>
         <div className="max-w-4xl mx-auto">
@@ -473,7 +456,7 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
                 </span>
                       </div>
             </motion.div>
-
+                    
             {/* Recommended Download - Full Width */}
             <motion.div variants={fadeIn} className="mb-8">
               <DownloadCard 
@@ -515,7 +498,7 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
                       getDownloadUrl={getDownloadUrl}
                       isDark={isDark}
                     />
-                  ))}
+                      ))}
                 </motion.div>
               )}
             </motion.div>
