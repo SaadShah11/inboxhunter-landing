@@ -119,6 +119,20 @@ function Navbar({
     { id: 'faq' as Page, label: 'FAQ' },
   ]
 
+  const scrollToDownload = () => {
+    // If not on home page, go to home first
+    if (currentPage !== 'home') {
+      setCurrentPage('home')
+      // Wait for page change, then scroll
+      setTimeout(() => {
+        document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
+    } else {
+      document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' })
+    }
+    setIsOpen(false)
+  }
+
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b transition-colors ${
       isDark ? 'bg-[#0a0a0f]/95 border-white/5' : 'bg-white/95 border-gray-200'
@@ -161,11 +175,29 @@ function Navbar({
             >
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
+            
+            {/* Download Button */}
+            <button
+              onClick={scrollToDownload}
+              className="ml-3 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 transition-all flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Download
+            </button>
           </div>
           
           <div className="flex items-center gap-2 md:hidden">
+            {/* Download Button Mobile */}
+            <button
+              onClick={scrollToDownload}
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold shadow-lg shadow-blue-500/25 flex items-center gap-1.5"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden xs:inline">Download</span>
+            </button>
+            
             {/* Theme Toggle Mobile */}
-          <button
+            <button
               onClick={toggleTheme}
               className={`p-2 rounded-lg transition-colors ${
                 isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
@@ -174,8 +206,8 @@ function Navbar({
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             <button onClick={() => setIsOpen(!isOpen)} className={`p-2 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}>
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
         
@@ -187,7 +219,7 @@ function Navbar({
               exit={{ opacity: 0, height: 0 }}
               className="md:hidden mt-4 pb-4 flex flex-col gap-2"
             >
-                {links.map(link => (
+              {links.map(link => (
                 <button
                   key={link.id}
                   onClick={() => { setCurrentPage(link.id); setIsOpen(false) }}
@@ -196,10 +228,10 @@ function Navbar({
                       ? isDark ? 'bg-white/10 text-white' : 'bg-gray-100 text-gray-900'
                       : isDark ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'
                   }`}
-                  >
-                    {link.label}
+                >
+                  {link.label}
                 </button>
-                ))}
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
