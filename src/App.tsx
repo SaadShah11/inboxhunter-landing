@@ -140,9 +140,11 @@ function Navbar({
       <div className="max-w-6xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <button onClick={() => setCurrentPage('home')} className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow">
-              <Mail className="w-5 h-5 text-white" />
-            </div>
+            <img 
+              src="/InboxHunter-logo-icon.png" 
+              alt="InboxHunter" 
+              className="w-10 h-10 rounded-xl shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow object-cover"
+            />
             <span className={`text-xl font-bold bg-gradient-to-r bg-clip-text text-transparent ${
               isDark ? 'from-white to-gray-300' : 'from-gray-900 to-gray-600'
             }`}>InboxHunter</span>
@@ -188,7 +190,7 @@ function Navbar({
           
           <div className="flex items-center gap-2 md:hidden">
             {/* Download Button Mobile */}
-            <button
+          <button
               onClick={scrollToDownload}
               className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold shadow-lg shadow-blue-500/25 flex items-center gap-1.5"
             >
@@ -206,8 +208,8 @@ function Navbar({
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             <button onClick={() => setIsOpen(!isOpen)} className={`p-2 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}>
-              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
           </div>
         </div>
         
@@ -219,7 +221,7 @@ function Navbar({
               exit={{ opacity: 0, height: 0 }}
               className="md:hidden mt-4 pb-4 flex flex-col gap-2"
             >
-              {links.map(link => (
+                {links.map(link => (
                 <button
                   key={link.id}
                   onClick={() => { setCurrentPage(link.id); setIsOpen(false) }}
@@ -228,8 +230,8 @@ function Navbar({
                       ? isDark ? 'bg-white/10 text-white' : 'bg-gray-100 text-gray-900'
                       : isDark ? 'text-gray-400 hover:bg-white/5' : 'text-gray-600 hover:bg-gray-100'
                   }`}
-                >
-                  {link.label}
+                  >
+                    {link.label}
                 </button>
               ))}
             </motion.div>
@@ -616,9 +618,11 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
       <footer className={`py-10 px-6 border-t ${isDark ? 'border-white/5 bg-black/20' : 'border-gray-200 bg-gray-50'}`}>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <Mail className="w-5 h-5 text-white" />
-            </div>
+            <img 
+              src="/InboxHunter-logo-icon.png" 
+              alt="InboxHunter" 
+              className="w-10 h-10 rounded-xl object-cover"
+            />
             <div>
               <div className={`font-bold ${textPrimary}`}>InboxHunter</div>
               <div className={`text-xs ${textMuted}`}>AI Lead Generation</div>
@@ -809,7 +813,7 @@ function GettingStartedPage({ setCurrentPage, isDark }: { setCurrentPage: (page:
                   <ol className="space-y-4">
                     <li className="flex items-start gap-3">
                       <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                      <span className={textStep}>Download the .dmg file (Apple Silicon or Intel)</span>
+                      <span className={textStep}>Download the .dmg file (Apple Silicon)</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
@@ -852,7 +856,7 @@ function GettingStartedPage({ setCurrentPage, isDark }: { setCurrentPage: (page:
                   </ol>
                 </div>
 
-                {/* Linux Installation */}
+                {/* Linux Installation - Currently disabled
                 <div className={`p-6 rounded-2xl border ${cardBg}`}>
                   <div className="flex items-center gap-4 mb-5">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}>
@@ -887,6 +891,7 @@ function GettingStartedPage({ setCurrentPage, isDark }: { setCurrentPage: (page:
                     </li>
                   </ol>
                 </div>
+                */}
               </motion.div>
             )}
 
