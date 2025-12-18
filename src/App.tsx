@@ -8,7 +8,6 @@ import {
   Monitor,
   ChevronRight,
   ChevronDown,
-  Terminal,
   CheckCircle2,
   Sparkles,
   Eye,
