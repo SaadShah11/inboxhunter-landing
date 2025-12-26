@@ -32,9 +32,25 @@ import './App.css'
 // =============================================================================
 // CONFIGURATION
 // =============================================================================
-const DOWNLOAD_BASE_URL = import.meta.env.VITE_DOWNLOAD_BASE_URL || "https://inboxhunter-releases.s3.us-east-1.amazonaws.com/releases/latest"
-const CURRENT_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0"
+const S3_BASE_URL = import.meta.env.VITE_S3_BASE_URL || "https://inboxhunter-releases.s3.eu-north-1.amazonaws.com/releases"
 const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || "support@inboxhunter.com"
+
+// =============================================================================
+// Types for versions
+// =============================================================================
+interface VersionInfo {
+  version: string
+  released_at: string
+  files: {
+    macos_arm64: string
+    windows: string
+  }
+}
+
+interface VersionsData {
+  latest: string
+  versions: VersionInfo[]
+}
 
 // =============================================================================
 // Types
@@ -245,7 +261,8 @@ function DownloadCard({
   download, 
   isRecommended, 
   getDownloadUrl,
-  isDark
+  isDark,
+  version
 }: { 
   download: {
     id: string
@@ -258,6 +275,7 @@ function DownloadCard({
   isRecommended: boolean
   getDownloadUrl: (fileName: string) => string
   isDark: boolean
+  version: string
 }) {
   const Icon = download.icon
   
@@ -309,7 +327,7 @@ function DownloadCard({
         }`}
       >
         <Download className="w-5 h-5" />
-        Download v{CURRENT_VERSION}
+        Download v{version}
       </a>
       
       {/* Post-install instructions - Always visible with proper styling */}
@@ -341,10 +359,42 @@ function DownloadCard({
 function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => void; isDark: boolean }) {
   const [detectedOS, setDetectedOS] = useState<DetectedOS>('unknown')
   const [showAllDownloads, setShowAllDownloads] = useState(false)
+  const [showAllVersions, setShowAllVersions] = useState(false)
+  const [versionsData, setVersionsData] = useState<VersionsData | null>(null)
+  const [selectedVersion, setSelectedVersion] = useState<string>('')
+  const [loadingVersions, setLoadingVersions] = useState(true)
   
   useEffect(() => {
     setDetectedOS(detectOS())
+    
+    // Fetch available versions from S3
+    fetch(`${S3_BASE_URL}/versions.json`)
+      .then(res => res.json())
+      .then((data: VersionsData) => {
+        setVersionsData(data)
+        setSelectedVersion(data.latest || data.versions[0]?.version || '1.1.0')
+        setLoadingVersions(false)
+      })
+      .catch(() => {
+        // Fallback if versions.json doesn't exist yet
+        setVersionsData({
+          latest: '1.1.0',
+          versions: [{
+            version: '1.1.0',
+            released_at: new Date().toISOString(),
+            files: {
+              macos_arm64: 'InboxHunter_1.1.0_aarch64.dmg',
+              windows: 'InboxHunter_1.1.0_x64-setup.exe'
+            }
+          }]
+        })
+        setSelectedVersion('1.1.0')
+        setLoadingVersions(false)
+      })
   }, [])
+
+  const currentVersionData = versionsData?.versions.find(v => v.version === selectedVersion)
+  const currentVersion = selectedVersion || versionsData?.latest || '1.1.0'
 
   const downloads = [
     {
@@ -352,61 +402,31 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
       name: 'macOS',
       subtitle: 'Apple Silicon (M-series)',
       icon: Apple,
-      fileName: `InboxHunter_${CURRENT_VERSION}_aarch64.dmg`,
+      fileName: currentVersionData?.files.macos_arm64 || `InboxHunter_${currentVersion}_aarch64.dmg`,
       postInstall: {
         command: 'xattr -cr /Applications/InboxHunter.app',
         description: 'Open Terminal and run this command to enable the app:'
       }
     },
-    // Intel Mac commented out for now
-    // {
-    //   id: 'mac-intel',
-    //   name: 'macOS',
-    //   subtitle: 'Intel Processor',
-    //   icon: Apple,
-    //   fileName: `InboxHunter_${CURRENT_VERSION}_x64.dmg`,
-    //   postInstall: {
-    //     command: 'xattr -cr /Applications/InboxHunter.app',
-    //     description: 'Open Terminal and run this command to enable the app:'
-    //   }
-    // },
     {
       id: 'windows',
       name: 'Windows',
       subtitle: '64-bit (Windows 10/11)',
       icon: Monitor,
-      fileName: `InboxHunter_${CURRENT_VERSION}_x64-setup.exe`,
+      fileName: currentVersionData?.files.windows || `InboxHunter_${currentVersion}_x64-setup.exe`,
       postInstall: {
         command: null,
         description: 'If Windows SmartScreen appears, click "More info" then "Run anyway" to continue installation.'
       }
     },
-    // Linux builds are currently disabled
-    // {
-    //   id: 'linux',
-    //   name: 'Linux',
-    //   subtitle: 'AppImage (Universal)',
-    //   icon: Terminal,
-    //   fileName: `inbox-hunter_${CURRENT_VERSION}_amd64.AppImage`,
-    //   postInstall: {
-    //     command: 'chmod +x inbox-hunter_*.AppImage && ./inbox-hunter_*.AppImage',
-    //     description: 'Make the file executable and run it:'
-    //   }
-    // },
-    // {
-    //   id: 'linux-deb',
-    //   name: 'Linux',
-    //   subtitle: 'Debian/Ubuntu (.deb)',
-    //   icon: Terminal,
-    //   fileName: `inbox-hunter_${CURRENT_VERSION}_amd64.deb`,
-    //   postInstall: {
-    //     command: 'sudo dpkg -i inbox-hunter_*.deb',
-    //     description: 'Install using your package manager:'
-    //   }
-    // },
   ]
 
-  const getDownloadUrl = (fileName: string) => `${DOWNLOAD_BASE_URL}/${fileName}`
+  const getDownloadUrl = (fileName: string) => {
+    // Use version-specific folder for non-latest versions, or latest folder for current
+    const isLatest = selectedVersion === versionsData?.latest
+    const folder = isLatest ? 'latest' : `v${selectedVersion}`
+    return `${S3_BASE_URL}/${folder}/${fileName}`
+  }
   
   const recommendedDownload = downloads.find(d => d.id === detectedOS) || downloads[0]
   const otherDownloads = downloads.filter(d => d.id !== recommendedDownload.id)
@@ -478,16 +498,39 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
             <motion.div variants={fadeIn} className="text-center mb-12">
               <h2 className={`text-4xl font-bold mb-4 ${textPrimary}`}>Download InboxHunter</h2>
               <p className={`text-lg ${textSecondary}`}>
-                Version {CURRENT_VERSION} • Free to use • No account required
+                Free to use • No account required
               </p>
               
-              {/* Detected OS indicator */}
-              <div className={`inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full border ${pillBg}`}>
-                <Cpu className="w-4 h-4 text-blue-500" />
-                <span className={`text-sm ${textSecondary}`}>
-                  We detected <span className={`font-medium ${textPrimary}`}>{osDisplayName[detectedOS]}</span>
-                </span>
-                      </div>
+              {/* Version selector and OS indicator */}
+              <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+                {/* Version Selector */}
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${pillBg}`}>
+                  <span className={`text-sm ${textSecondary}`}>Version:</span>
+                  {loadingVersions ? (
+                    <span className={`text-sm font-medium ${textPrimary}`}>Loading...</span>
+                  ) : (
+                    <select
+                      value={selectedVersion}
+                      onChange={(e) => setSelectedVersion(e.target.value)}
+                      className={`text-sm font-medium bg-transparent border-none outline-none cursor-pointer ${textPrimary}`}
+                    >
+                      {versionsData?.versions.map((v) => (
+                        <option key={v.version} value={v.version} className="bg-gray-900 text-white">
+                          v{v.version} {v.version === versionsData.latest ? '(Latest)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                
+                {/* Detected OS indicator */}
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${pillBg}`}>
+                  <Cpu className="w-4 h-4 text-blue-500" />
+                  <span className={`text-sm ${textSecondary}`}>
+                    Detected: <span className={`font-medium ${textPrimary}`}>{osDisplayName[detectedOS]}</span>
+                  </span>
+                </div>
+              </div>
             </motion.div>
                     
             {/* Recommended Download - Full Width */}
@@ -497,6 +540,7 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
                 isRecommended={true}
                 getDownloadUrl={getDownloadUrl}
                 isDark={isDark}
+                version={currentVersion}
               />
             </motion.div>
 
@@ -512,7 +556,7 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
               >
                 <ChevronDown className={`w-5 h-5 transition-transform ${showAllDownloads ? 'rotate-180' : ''}`} />
                 <span className="font-medium">
-                  {showAllDownloads ? 'Hide other options' : 'Show all download options'}
+                  {showAllDownloads ? 'Hide other platforms' : 'Show all platforms'}
                 </span>
               </button>
               
@@ -530,11 +574,99 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
                       isRecommended={false}
                       getDownloadUrl={getDownloadUrl}
                       isDark={isDark}
+                      version={currentVersion}
                     />
-                      ))}
+                  ))}
                 </motion.div>
               )}
             </motion.div>
+
+            {/* All Versions Section */}
+            {versionsData && versionsData.versions.length > 1 && (
+              <motion.div variants={fadeIn} className="mt-8">
+                <button
+                  onClick={() => setShowAllVersions(!showAllVersions)}
+                  className={`w-full py-4 flex items-center justify-center gap-2 transition-colors border rounded-xl ${
+                    isDark 
+                      ? 'text-gray-400 hover:text-white border-white/5 hover:bg-white/[0.02]' 
+                      : 'text-gray-600 hover:text-gray-900 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  <ChevronDown className={`w-5 h-5 transition-transform ${showAllVersions ? 'rotate-180' : ''}`} />
+                  <span className="font-medium">
+                    {showAllVersions ? 'Hide version history' : `View all versions (${versionsData.versions.length})`}
+                  </span>
+                </button>
+                
+                {showAllVersions && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="mt-6 space-y-3"
+                  >
+                    {versionsData.versions.map((v) => (
+                      <div
+                        key={v.version}
+                        className={`p-4 rounded-xl border ${
+                          v.version === versionsData.latest
+                            ? isDark 
+                              ? 'border-blue-500/30 bg-blue-500/5' 
+                              : 'border-blue-300 bg-blue-50'
+                            : isDark
+                              ? 'border-white/10 bg-white/[0.02]'
+                              : 'border-gray-200 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-lg font-semibold ${textPrimary}`}>
+                                v{v.version}
+                              </span>
+                              {v.version === versionsData.latest && (
+                                <span className="px-2 py-0.5 rounded-full bg-blue-500 text-white text-xs font-medium">
+                                  Latest
+                                </span>
+                              )}
+                            </div>
+                            <span className={`text-sm ${textSecondary}`}>
+                              Released: {new Date(v.released_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <a
+                              href={`${S3_BASE_URL}/v${v.version}/${v.files.macos_arm64}`}
+                              download
+                              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                isDark 
+                                  ? 'bg-white/10 hover:bg-white/15 text-white' 
+                                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+                              }`}
+                            >
+                              <Apple className="w-4 h-4" />
+                              macOS
+                            </a>
+                            <a
+                              href={`${S3_BASE_URL}/v${v.version}/${v.files.windows}`}
+                              download
+                              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                isDark 
+                                  ? 'bg-white/10 hover:bg-white/15 text-white' 
+                                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+                              }`}
+                            >
+                              <Monitor className="w-4 h-4" />
+                              Windows
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
         </motion.div>
       </div>
     </section>
