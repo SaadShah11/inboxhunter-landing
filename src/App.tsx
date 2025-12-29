@@ -367,28 +367,34 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
   useEffect(() => {
     setDetectedOS(detectOS())
     
-    // Fetch available versions from S3
-    fetch(`${S3_BASE_URL}/versions.json`)
+    // Fetch available versions from S3 with cache-busting
+    const cacheBuster = `?t=${Date.now()}`
+    fetch(`${S3_BASE_URL}/versions.json${cacheBuster}`, {
+      cache: 'no-store',  // Prevent browser caching
+      headers: {
+        'Cache-Control': 'no-cache',
+      }
+    })
       .then(res => res.json())
       .then((data: VersionsData) => {
         setVersionsData(data)
-        setSelectedVersion(data.latest || data.versions[0]?.version || '1.1.0')
+        setSelectedVersion(data.latest || data.versions[0]?.version || '1.2.0')
         setLoadingVersions(false)
       })
       .catch(() => {
         // Fallback if versions.json doesn't exist yet
         setVersionsData({
-          latest: '1.1.0',
+          latest: '1.2.0',
           versions: [{
-            version: '1.1.0',
+            version: '1.2.0',
             released_at: new Date().toISOString(),
             files: {
-              macos_arm64: 'InboxHunter_1.1.0_aarch64.dmg',
-              windows: 'InboxHunter_1.1.0_x64-setup.exe'
+              macos_arm64: 'InboxHunter_1.2.0_aarch64.dmg',
+              windows: 'InboxHunter_1.2.0_x64-setup.exe'
             }
           }]
         })
-        setSelectedVersion('1.1.0')
+        setSelectedVersion('1.2.0')
         setLoadingVersions(false)
       })
   }, [])
@@ -522,15 +528,15 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
                     </select>
                   )}
                 </div>
-                
-                {/* Detected OS indicator */}
+              
+              {/* Detected OS indicator */}
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${pillBg}`}>
-                  <Cpu className="w-4 h-4 text-blue-500" />
-                  <span className={`text-sm ${textSecondary}`}>
+                <Cpu className="w-4 h-4 text-blue-500" />
+                <span className={`text-sm ${textSecondary}`}>
                     Detected: <span className={`font-medium ${textPrimary}`}>{osDisplayName[detectedOS]}</span>
-                  </span>
+                </span>
                 </div>
-              </div>
+                      </div>
             </motion.div>
                     
             {/* Recommended Download - Full Width */}
@@ -576,7 +582,7 @@ function HomePage({ setCurrentPage, isDark }: { setCurrentPage: (page: Page) => 
                       isDark={isDark}
                       version={currentVersion}
                     />
-                  ))}
+                      ))}
                 </motion.div>
               )}
             </motion.div>
